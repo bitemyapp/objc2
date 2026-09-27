@@ -126,6 +126,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   features.
 * Fixed `NSTextAlignment::Center` and `NSTextAlignment::Right` on GNUStep
   x86_64: they are now 1 and 2 on every architecture, as in libs-gui.
+* `NSCreateFilenamePboardType` and `NSCreateFileContentsPboardType` no longer
+  take ownership of the string they return, which is autoreleased; they
+  released it one time too many.
 
 ## [0.3.2] - 2025-10-04
 [0.3.2]: https://github.com/madsmtm/objc2/compare/frameworks-0.3.1...frameworks-0.3.2
