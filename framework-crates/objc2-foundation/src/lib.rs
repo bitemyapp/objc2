@@ -194,6 +194,11 @@ pub use self::geometry::{NSPoint, NSRect, NSSize};
 pub use self::ns_consumed::NSFreeMapTable;
 #[cfg(feature = "NSRange")]
 pub use self::range::NSRange;
+#[cfg(feature = "NSString")]
+pub use self::string::{
+    NSStringEncoding, NSUTF16BigEndianStringEncoding, NSUTF16LittleEndianStringEncoding,
+    NSUTF32BigEndianStringEncoding, NSUTF32LittleEndianStringEncoding, NSUTF32StringEncoding,
+};
 #[cfg(feature = "NSThread")]
 pub use self::thread::*;
 

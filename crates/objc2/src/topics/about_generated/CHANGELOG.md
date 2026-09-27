@@ -32,6 +32,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * **BREAKING**: The reply block in `FSVolumeRenameOperations::setVolumeName_replyHandler` now
   takes a nullable file name.
 * **BREAKING**: The media selection option on `AVAssetVariantQualifier` is now nullable.
+* **BREAKING** (GNUStep only): `NSStringEncoding` is now a `c_int` when the
+  `gnustep-1-7` feature is enabled, since GNUStep declares it as a C enum
+  without a fixed type. Methods that take or return an encoding now have the
+  right signature there, and `availableStringEncodings` the right stride.
 
 ### Fixed
 * **BREAKING**: Fix structs with packed alignment by marking them `#[repr(packed(...))]`.

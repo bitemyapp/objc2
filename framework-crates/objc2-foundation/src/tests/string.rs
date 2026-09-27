@@ -310,3 +310,36 @@ fn get_characters_of_swift_string() {
         "a-host-name-too-long-for-a-tagged-pointer.example.com",
     );
 }
+
+#[test]
+fn encoding_constants() {
+    use crate::{
+        NSStringEncoding, NSUInteger, NSUTF16BigEndianStringEncoding,
+        NSUTF16LittleEndianStringEncoding, NSUTF32BigEndianStringEncoding,
+        NSUTF32LittleEndianStringEncoding, NSUTF32StringEncoding, NSUTF8StringEncoding,
+    };
+    use objc2::encode::{Encode, Encoding};
+
+    // Clang encodes GNUStep's `NSStringEncoding` enum as an `int`.
+    let expected = if cfg!(feature = "gnustep-1-7") {
+        Encoding::Int
+    } else {
+        NSUInteger::ENCODING
+    };
+    assert_eq!(NSStringEncoding::ENCODING, expected);
+
+    // The same bit patterns on every runtime, even though GNUStep's type is
+    // a signed `int`.
+    assert_eq!(NSUTF16BigEndianStringEncoding as u32, 0x90000100);
+    assert_eq!(NSUTF16LittleEndianStringEncoding as u32, 0x94000100);
+    assert_eq!(NSUTF32StringEncoding as u32, 0x8c000100);
+    assert_eq!(NSUTF32BigEndianStringEncoding as u32, 0x98000100);
+    assert_eq!(NSUTF32LittleEndianStringEncoding as u32, 0x9c000100);
+
+    let s = NSString::from_str("abc");
+    assert_eq!(s.lengthOfBytesUsingEncoding(NSUTF8StringEncoding), 3);
+    assert_eq!(
+        s.lengthOfBytesUsingEncoding(NSUTF32LittleEndianStringEncoding),
+        12
+    );
+}

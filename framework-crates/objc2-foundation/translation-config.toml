@@ -46,6 +46,16 @@ class.NSProxy.skipped = true
 struct._NSZone.skipped = true
 typedef.NSZone.skipped = true
 
+# GNUStep declares this as a C enum without a fixed type, so it is `int`
+# sized there, not `NSUInteger`. Defined manually, together with the
+# constants that don't fit in an `int`.
+typedef.NSStringEncoding.skipped = true
+const.NSUTF16BigEndianStringEncoding.skipped = true
+const.NSUTF16LittleEndianStringEncoding.skipped = true
+const.NSUTF32StringEncoding.skipped = true
+const.NSUTF32BigEndianStringEncoding.skipped = true
+const.NSUTF32LittleEndianStringEncoding.skipped = true
+
 # Contains bitfields
 struct.NSDecimal.skipped = true
 
