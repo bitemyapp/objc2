@@ -285,3 +285,28 @@ fn class_cluster_and_init_method() {
     let _: () = unsafe { msg_send![allocated_object, release] };
     assert!(has_method, "Allocated (but uninitialized) has method");
 }
+
+#[test]
+#[cfg(all(feature = "NSRange", feature = "NSURL"))]
+#[cfg_attr(not(target_vendor = "apple"), ignore = "only on Apple")]
+fn get_characters_of_swift_string() {
+    use crate::{NSRange, NSURLComponents};
+    use core::ptr::NonNull;
+
+    // Since macOS 26, the strings from `NSURLComponents` are Swift strings
+    // (unless they fit in a tagged pointer), and those encode the range in
+    // `getCharacters:range:` as `{?=qq}`, not as `{_NSRange=QQ}`.
+    let url = ns_string!("https://a-host-name-too-long-for-a-tagged-pointer.example.com/");
+    #[allow(unused_unsafe)]
+    let components = unsafe { NSURLComponents::componentsWithString(url) }.unwrap();
+    #[allow(unused_unsafe)]
+    let host = unsafe { components.host() }.unwrap();
+
+    let mut buffer = alloc::vec![0; host.length()];
+    let range = NSRange::new(0, buffer.len());
+    unsafe { host.getCharacters_range(NonNull::new(buffer.as_mut_ptr()).unwrap(), range) };
+    assert_eq!(
+        alloc::string::String::from_utf16(&buffer).unwrap(),
+        "a-host-name-too-long-for-a-tagged-pointer.example.com",
+    );
+}
