@@ -124,6 +124,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `boolean_t` and `malloc` zones) are now only available on Apple platforms,
   so crates such as `objc2-core-foundation` compile off Apple with default
   features.
+* Fixed `NSTextAlignment::Center` and `NSTextAlignment::Right` on GNUStep
+  x86_64: they are now 1 and 2 on every architecture, as in libs-gui.
 
 ## [0.3.2] - 2025-10-04
 [0.3.2]: https://github.com/madsmtm/objc2/compare/frameworks-0.3.1...frameworks-0.3.2
