@@ -37,6 +37,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   CoreText types (such as `NSColor::CGColor` and `NSView::layer`) on GNUStep
   too. The toll-free bridging between AppKit and CoreText types stays
   Apple-only.
+* Added `NSURL::from_file_path`, `NSURL::from_directory_path` and
+  `NSURL::to_file_path` on GNUStep.
 
 ### Changed
 * Updated SDK from Xcode 26.0.1 to 27.0.
