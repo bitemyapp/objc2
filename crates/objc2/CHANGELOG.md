@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   the same fields, and register-sized integer fields may differ in sign. This
   fixes a debug panic when calling `-getCharacters:range:` on Swift-backed
   strings on macOS 26.
+* Fixed the "negative impls are experimental" future-incompatibility
+  warning that newer compilers print when building `objc2` without the
+  `"unstable-autoreleasesafe"` feature.
 
 
 ## [0.6.4] - 2026-02-26
