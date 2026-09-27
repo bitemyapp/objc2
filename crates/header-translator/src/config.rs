@@ -453,6 +453,7 @@ impl LibraryConfig {
             assert_eq!(data.unsafe_, Default::default());
             assert_eq!(data.no_implementor, Default::default());
             assert_eq!(data.implementor, Default::default());
+            assert_eq!(data.returns_retained, Default::default());
         }
     }
 
@@ -568,6 +569,15 @@ pub struct StmtData {
     pub no_implementor: bool,
     #[serde(default)]
     pub implementor: Option<ItemIdentifier>,
+    /// Whether the function returns a retained (+1) object.
+    ///
+    /// By default, this is inferred from the function's name (the create
+    /// rule) and its `*_RETURNS_RETAINED` / `*_RETURNS_NOT_RETAINED`
+    /// attributes. This can be used for the few functions that have neither
+    /// right.
+    #[serde(rename = "returns-retained")]
+    #[serde(default)]
+    pub returns_retained: Option<bool>,
 }
 
 impl StmtData {
@@ -755,4 +765,45 @@ where
         return Err(de::Error::custom("duplicate integer key"));
     }
     Ok(data)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn function_overrides() {
+        let config: LibraryConfig = basic_toml::from_str(
+            r#"
+            framework = "Test"
+            crate = "objc2-test"
+            required-crates = []
+            fn.TestCreateThing.returns-retained = false
+            fn.TestGetThing.returns-retained = true
+            "#,
+        )
+        .unwrap();
+        config.validate();
+        assert_eq!(config.fns["TestCreateThing"].returns_retained, Some(false));
+        assert_eq!(config.fns["TestGetThing"].returns_retained, Some(true));
+    }
+
+    #[test]
+    fn returns_retained_only_on_functions() {
+        let config: LibraryConfig = basic_toml::from_str(
+            r#"
+            framework = "Test"
+            crate = "objc2-test"
+            required-crates = []
+            static.TestThing.returns-retained = false
+            "#,
+        )
+        .unwrap();
+        assert_eq!(config.statics["TestThing"].returns_retained, Some(false));
+        let validated = std::panic::catch_unwind(|| config.validate());
+        assert!(
+            validated.is_err(),
+            "`returns-retained` accepted on a static"
+        );
+    }
 }

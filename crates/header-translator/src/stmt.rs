@@ -1648,6 +1648,13 @@ impl Stmt {
                     _ => error!("unknown"),
                 });
 
+                if let Some(configured) = data.returns_retained {
+                    if configured == returns_retained {
+                        warn!(returns_retained, "returns-retained already set");
+                    }
+                    returns_retained = configured;
+                }
+
                 if result_type.needs_simd()
                     || arguments.iter().any(|(_, arg_ty)| arg_ty.needs_simd())
                 {
