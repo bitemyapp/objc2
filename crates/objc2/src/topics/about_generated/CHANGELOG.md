@@ -15,6 +15,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 * Added `IOKit` "serial" submodule.
 * Added various missing APIs.
+* Added GNUStep support to `objc2-core-graphics`, `objc2-quartz-core`,
+  `objc2-core-text` and `objc2-image-io`: they now compile for non-Apple
+  targets, and only link their framework on Apple platforms. In turn,
+  `objc2-app-kit` exposes the APIs that use CoreGraphics, QuartzCore and
+  CoreText types (such as `NSColor::CGColor` and `NSView::layer`) on GNUStep
+  too.
 
 ### Changed
 * Updated SDK from Xcode 16.3 to 16.4.
@@ -29,6 +35,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 * **BREAKING**: Fix structs with packed alignment by marking them `#[repr(packed(...))]`.
+* Items that use Darwin-only `libc` types (Mach ports, `cpu_type_t` and
+  `boolean_t`) are now only available on Apple platforms, so crates such as
+  `objc2-core-foundation` compile off Apple with default features.
 
 ## [0.3.1] - 2025-04-19
 [0.3.1]: https://github.com/madsmtm/objc2/compare/frameworks-0.3.0...frameworks-0.3.1

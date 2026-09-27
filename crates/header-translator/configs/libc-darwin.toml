@@ -1,0 +1,23 @@
+# The parts of `libc` that only exist on Apple platforms (Mach), see
+# `Location::new`.
+#
+# Items using these are gated to Apple platforms, even in crates that support
+# GNUStep. The `libc` dependency itself comes from `libc.toml`
+# (`Config::try_library_from_crate` picks `__libc__` for the `libc` crate).
+framework = "__libc_darwin__"
+crate = "libc"
+required-crates = []
+link = false
+skipped = true
+is-library = true
+
+# Available on all Apple platforms, but not on GNUStep.
+macos = "10.0"
+maccatalyst = "13.0"
+ios = "2.0"
+tvos = "9.0"
+watchos = "2.0"
+visionos = "1.0"
+
+# HACK: Define `task_port_t` in the using crate (it's a simple alias to `task_t`).
+external.task_port_t.module = "__builtin__"

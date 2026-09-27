@@ -8,6 +8,7 @@ ios = "3.2"
 tvos = "9.0"
 watchos = "2.0"
 visionos = "1.0"
+gnustep = true
 
 # Unknown calling convention / ABI
 fn.CTRubyAnnotationCreate.skipped = true
