@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `objc2-app-kit` exposes the APIs that use CoreGraphics, QuartzCore and
   CoreText types (such as `NSColor::CGColor` and `NSView::layer`) on GNUStep
   too.
+* Added `NSURL::from_file_path`, `NSURL::from_directory_path`,
+  `NSURL::from_path` and `NSURL::to_file_path` on GNUStep.
 
 ### Changed
 * Updated SDK from Xcode 16.3 to 16.4.
