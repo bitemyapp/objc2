@@ -1,3 +1,6 @@
+// Calls CoreGraphics functions, which only Apple provides (GNUStep CI doesn't
+// install libs-opal).
+#![cfg(target_vendor = "apple")]
 #![cfg(feature = "CGContext")]
 #![cfg(feature = "CGColorSpace")]
 #![cfg(feature = "CGPDFContext")]

@@ -30,6 +30,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * **BREAKING**: Added support for out parameters in functions. This means that some functions now take `&mut Option<CFRetained<T>>` instead of `*mut *mut T`.
 * Added support for interop between `CFAllocator` and `std::alloc::Allocator` behind the `"unstable-allocator-api"` Cargo feature.
 * Added missing `AudioToolbox` unions and functions using these.
+* Added GNUStep support to `objc2-core-graphics`, `objc2-quartz-core`,
+  `objc2-core-text` and `objc2-image-io`: they now compile for non-Apple
+  targets, and only link their framework on Apple platforms. In turn,
+  `objc2-app-kit` exposes the APIs that use CoreGraphics, QuartzCore and
+  CoreText types (such as `NSColor::CGColor` and `NSView::layer`) on GNUStep
+  too. The toll-free bridging between AppKit and CoreText types stays
+  Apple-only.
 
 ### Changed
 * Updated SDK from Xcode 26.0.1 to 27.0.
@@ -107,6 +114,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * **BREAKING**: Improved support for unsized structs.
 * Improved documentation for enum variants.
 * Fixed a bunch of thread-safety issues in `objc2-avf-audio`.
+* Items that use Darwin-only `libc` types (Mach ports, `cpu_type_t`,
+  `boolean_t` and `malloc` zones) are now only available on Apple platforms,
+  so crates such as `objc2-core-foundation` compile off Apple with default
+  features.
 
 ## [0.3.2] - 2025-10-04
 [0.3.2]: https://github.com/madsmtm/objc2/compare/frameworks-0.3.1...frameworks-0.3.2

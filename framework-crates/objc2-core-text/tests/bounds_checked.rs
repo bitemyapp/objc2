@@ -1,3 +1,6 @@
+// Calls CoreText functions, which only Apple provides (GNUStep CI doesn't
+// install libs-opal).
+#![cfg(target_vendor = "apple")]
 #![cfg(feature = "CTTypesetter")]
 #![cfg(feature = "CTLine")]
 use objc2_core_foundation::{CFAttributedString, CFRange, CFString};

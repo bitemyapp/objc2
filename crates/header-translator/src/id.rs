@@ -63,6 +63,7 @@ pub struct Location {
     // __builtin__
     // __core__
     // __libc__
+    // __libc_darwin__ (the Apple-only parts of `libc`)
     module_path: Box<str>,
 }
 
@@ -175,14 +176,16 @@ impl Location {
             "ptrauth" => "__libc__".into(),
             "Darwin.uuid" => "__libc__".into(),
             "unistd" => "__libc__".into(),
-            "Darwin.malloc" => "__libc__".into(),
-            "_stdlib.malloc.malloc_type" => "__libc__".into(),
 
+            // `libc`, but only on Apple platforms, so items using these
+            // must be gated even in crates that support GNUStep.
+            "Darwin.malloc" => "__libc_darwin__".into(),
+            "_stdlib.malloc.malloc_type" => "__libc_darwin__".into(),
             // Will be moved to the `mach2` crate in `libc` v1.0
-            name if name.starts_with("Darwin.Mach") => "__libc__".into(),
-            "mach.port.mach_port_t" => "__libc__".into(),
-            "mach.mach_port_t" => "__libc__".into(),
-            "_mach_port_t" => "__libc__".into(),
+            name if name.starts_with("Darwin.Mach") => "__libc_darwin__".into(),
+            "mach.port.mach_port_t" => "__libc_darwin__".into(),
+            "mach.mach_port_t" => "__libc_darwin__".into(),
+            "_mach_port_t" => "__libc_darwin__".into(),
 
             // Rename "ObjC" modules to `objc2`, such that the feature flag matches.
             "IOSurface.ObjC" => "IOSurface.objc2".into(),
@@ -544,7 +547,7 @@ impl ItemIdentifier {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 match self.0.location.library_name() {
                     "__bitflags__" => write!(f, "bitflags::{}", self.0.name),
-                    "__libc__" => write!(f, "libc::{}", self.0.name),
+                    "__libc__" | "__libc_darwin__" => write!(f, "libc::{}", self.0.name),
                     "block" => write!(f, "block2::Dyn{}", self.0.name),
                     _ => write!(f, "{}", self.0.name),
                 }
@@ -623,6 +626,32 @@ pub fn cfg_gate_ln<'a, R: AsRef<ItemTree> + 'a, I: AsRef<ItemTree> + 'a>(
     config: &'a Config,
     emission_location: &'a Location,
 ) -> impl fmt::Display + 'a {
+    cfg_gate_ln_inner(required, implied, config, emission_location, false)
+}
+
+/// Like [`cfg_gate_ln`], but the item is only available on Apple platforms,
+/// even where everything it requires is also available on GNUStep.
+pub fn cfg_gate_ln_apple_only<'a, R: AsRef<ItemTree> + 'a>(
+    required: impl IntoIterator<Item = R> + 'a,
+    config: &'a Config,
+    emission_location: &'a Location,
+) -> impl fmt::Display + 'a {
+    cfg_gate_ln_inner(
+        required,
+        [] as [ItemTree; 0],
+        config,
+        emission_location,
+        true,
+    )
+}
+
+fn cfg_gate_ln_inner<'a, R: AsRef<ItemTree> + 'a, I: AsRef<ItemTree> + 'a>(
+    required: impl IntoIterator<Item = R> + 'a,
+    implied: impl IntoIterator<Item = I> + 'a,
+    config: &'a Config,
+    emission_location: &'a Location,
+    apple_only: bool,
+) -> impl fmt::Display + 'a {
     // Use a set to deduplicate features, and to have them in
     // a consistent order.
     let mut feature_names = BTreeSet::new();
@@ -635,6 +664,10 @@ pub fn cfg_gate_ln<'a, R: AsRef<ItemTree> + 'a, I: AsRef<ItemTree> + 'a>(
         item.visit(emission_location, |id, _| {
             platform_cfg.dependency(config.library(id));
         });
+    }
+
+    if apple_only {
+        platform_cfg.apple_only();
     }
 
     for item in implied {
@@ -1228,7 +1261,7 @@ impl ItemTree {
             },
             // Rare enough that it's written directly instead of
             // glob-imported, see `ItemIdentifier::path`.
-            "__bitflags__" | "__libc__" | "block" => None,
+            "__bitflags__" | "__libc__" | "__libc_darwin__" | "block" => None,
             "ObjectiveC" => Some("objc2::__framework_prelude::*".into()),
             // Not currently needed, but might be useful to emit
             // `Some("crate")` here in the future.
@@ -1347,5 +1380,116 @@ mod tests {
         expected.sort();
         actual.sort();
         assert_eq!(&expected, &*actual, "\n\n{expected:#?}\n\n{actual:#?}");
+    }
+
+    #[test]
+    fn darwin_only_libc() {
+        for module in [
+            "Darwin.Mach",
+            "Darwin.Mach.port",
+            "mach.port.mach_port_t",
+            "mach.mach_port_t",
+            "_mach_port_t",
+            "Darwin.malloc",
+            "_stdlib.malloc.malloc_type",
+        ] {
+            assert_eq!(Location::new(module).library_name(), "__libc_darwin__");
+        }
+        for module in ["Darwin.POSIX.sys.types", "_stdlib", "unistd"] {
+            assert_eq!(Location::new(module).library_name(), "__libc__");
+        }
+
+        let darwin = ItemIdentifier::from_str("__libc_darwin__.mach_port_t").unwrap();
+        let portable = ItemIdentifier::from_str("__libc__.uid_t").unwrap();
+        assert_eq!(darwin.path().to_string(), "libc::mach_port_t");
+        assert_eq!(portable.path().to_string(), "libc::uid_t");
+
+        let lib = |framework: &str, gnustep: bool| -> (String, crate::config::LibraryConfig) {
+            let toml = format!(
+                "framework = {framework:?}\n\
+                 crate = \"objc2-{}\"\n\
+                 required-crates = [\"objc2\"]\n\
+                 macos = \"10.0\"\n\
+                 ios = \"2.0\"\n\
+                 gnustep = {gnustep}\n",
+                framework.to_lowercase(),
+            );
+            (framework.into(), toml::from_str(&toml).unwrap())
+        };
+        let config = Config::new([lib("GNUStepKit", true), lib("AppleKit", false)].into()).unwrap();
+
+        // The `libc` dependency itself is available on GNUStep.
+        assert_eq!(config.library_from_crate("libc").framework, "__libc__");
+        assert!(config.library_from_crate("libc").gnustep);
+
+        let cfgs = |item: &ItemIdentifier, emission_location: &str| {
+            let emission_location = Location::from_str(emission_location).unwrap();
+            let required = [ItemTree::from_id(item.clone())];
+            let cfg = cfg_gate_ln(required, [] as [ItemTree; 0], &config, &emission_location);
+            cfg.to_string()
+        };
+        assert_eq!(
+            cfgs(&darwin, "GNUStepKit.Foo"),
+            "#[cfg(feature = \"libc\")]\n#[cfg(target_vendor = \"apple\")]\n",
+        );
+        assert_eq!(
+            cfgs(&portable, "GNUStepKit.Foo"),
+            "#[cfg(feature = \"libc\")]\n"
+        );
+        assert_eq!(
+            cfgs(&darwin, "AppleKit.Foo"),
+            "#[cfg(feature = \"libc\")]\n"
+        );
+        assert_eq!(
+            cfgs(&portable, "AppleKit.Foo"),
+            "#[cfg(feature = \"libc\")]\n"
+        );
+    }
+
+    #[test]
+    fn apple_only() {
+        let lib = |framework: &str, gnustep: bool| -> (String, crate::config::LibraryConfig) {
+            let toml = format!(
+                "framework = {framework:?}\n\
+                 crate = \"objc2-{}\"\n\
+                 required-crates = [\"objc2\"]\n\
+                 macos = \"10.0\"\n\
+                 ios = \"2.0\"\n\
+                 gnustep = {gnustep}\n",
+                framework.to_lowercase(),
+            );
+            (framework.into(), toml::from_str(&toml).unwrap())
+        };
+        let config = Config::new(
+            [
+                lib("GNUStepKit", true),
+                lib("GNUStepText", true),
+                lib("AppleKit", false),
+            ]
+            .into(),
+        )
+        .unwrap();
+        let item = ItemIdentifier::from_str("GNUStepText.Font").unwrap();
+
+        let cfgs = |emission_location: &str, apple_only: bool| {
+            let emission_location = Location::from_str(emission_location).unwrap();
+            let required = [ItemTree::from_id(item.clone())];
+            if apple_only {
+                let cfg = cfg_gate_ln_apple_only(required, &config, &emission_location);
+                cfg.to_string()
+            } else {
+                let cfg = cfg_gate_ln(required, [] as [ItemTree; 0], &config, &emission_location);
+                cfg.to_string()
+            }
+        };
+        let feature = "#[cfg(feature = \"objc2-gnusteptext\")]\n";
+        assert_eq!(cfgs("GNUStepKit.Foo", false), feature);
+        assert_eq!(
+            cfgs("GNUStepKit.Foo", true),
+            format!("{feature}#[cfg(target_vendor = \"apple\")]\n"),
+        );
+        // Crates without GNUStep support are already Apple-only.
+        assert_eq!(cfgs("AppleKit.Foo", false), feature);
+        assert_eq!(cfgs("AppleKit.Foo", true), feature);
     }
 }

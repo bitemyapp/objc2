@@ -830,7 +830,9 @@ fn update_ci(workspace_dir: &Path, config: &Config) -> io::Result<()> {
             && !not_on_simulator(lib)
     })?;
     writer(&mut ci, config, "FRAMEWORKS_GNUSTEP", |lib| {
-        // HACK: CoreFoundation uses mach types that GNUStep doesn't support
+        // HACK: CoreFoundation's tests call CoreFoundation functions, and
+        // GNUStep's implementation of those (libs-corebase) isn't installed
+        // in CI.
         lib.gnustep && lib.krate != "objc2-core-foundation"
     })?;
 

@@ -1,0 +1,29 @@
+# The parts of `libc` that only exist on Apple platforms (Mach and `malloc`
+# zones), see `Location::new`.
+#
+# Items using these are gated to Apple platforms, even in crates that support
+# GNUStep. The `libc` dependency itself comes from `libc.toml`
+# (`Config::try_library_from_crate` picks `__libc__` for the `libc` crate).
+framework = "__libc_darwin__"
+crate = "libc"
+required-crates = []
+link = false
+skipped = true
+is-library = true
+
+# Available on all Apple platforms, but not on GNUStep.
+macos = "10.0"
+maccatalyst = "13.0"
+ios = "2.0"
+tvos = "9.0"
+watchos = "2.0"
+visionos = "1.0"
+
+# HACK: Define `task_port_t` and `task_id_token_t` in the using crate
+# These are simple aliases to `task_t` and `mach_port_t` respectively.
+external.task_port_t.module = "__builtin__"
+external.task_id_token_t.module = "__builtin__"
+
+# Redefined by CoreFoundation with a name that makes it hard to see
+# that this is `libc::malloc_zone_t`.
+struct._malloc_zone_t.renamed = "malloc_zone_t"

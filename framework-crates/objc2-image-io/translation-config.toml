@@ -8,6 +8,7 @@ ios = "4.0"
 tvos = "9.0"
 watchos = "2.0"
 visionos = "1.0"
+gnustep = true
 
 # Emit these.
 const.IMAGEIO_PNG_NO_FILTERS.skipped = false

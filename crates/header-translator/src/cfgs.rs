@@ -108,6 +108,11 @@ impl PlatformCfg {
         self.gnustep.dependency(dependency.gnustep);
     }
 
+    /// Restrict to Apple platforms, like a dependency that GNUStep lacks.
+    pub fn apple_only(&mut self) {
+        self.gnustep.dependency(false);
+    }
+
     pub fn implied(&mut self, implied: &LibraryConfig) {
         self.macos.implied(implied.macos.is_some());
         // FIXME: Temporarily disable Mac Catalyst, see above

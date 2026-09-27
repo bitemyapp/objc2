@@ -17,6 +17,7 @@ use crate::display_helper::FormatterFn;
 use crate::documentation::Documentation;
 use crate::expr::Expr;
 use crate::id::cfg_gate_ln;
+use crate::id::cfg_gate_ln_apple_only;
 use crate::id::ItemIdentifier;
 use crate::id::ItemTree;
 use crate::id::Location;
@@ -348,6 +349,16 @@ fn verify_objc_decl(entity: &Entity<'_>, _context: &Context<'_>) {
             (_, parent_kind) => error!(?entity, ?parent_kind, "unknown in parent"),
         }
     });
+}
+
+/// Whether the toll-free bridging with `bridged_to` only exists on Apple
+/// platforms.
+///
+/// GNUStep bridges Foundation and CoreFoundation (in libs-corebase), but not
+/// for example AppKit and CoreText: GNUStep's `NSFont` is not Opal's
+/// `CTFont`, so a safe cast between the two would be unsound there.
+fn bridging_is_apple_only(bridged_to: &ItemIdentifier) -> bool {
+    bridged_to.library_name() != "CoreFoundation"
 }
 
 /// Whether the entity contains a bridging modifier, and if so, what that
@@ -2574,6 +2585,26 @@ impl Stmt {
         cfg_gate_ln(required_items, [] as [ItemTree; 0], config, self.location())
     }
 
+    /// The `AsRef` impls for toll-free bridging with `bridged_to`.
+    fn cfg_gate_ln_bridged<'a>(
+        &'a self,
+        bridged_to: &'a ItemIdentifier,
+        config: &'a Config,
+    ) -> impl fmt::Display + 'a {
+        let required = [ItemTree::from_id(bridged_to.clone())];
+        FormatterFn(move |f| {
+            if bridging_is_apple_only(bridged_to) {
+                write!(
+                    f,
+                    "{}",
+                    cfg_gate_ln_apple_only(required.clone(), config, self.location())
+                )
+            } else {
+                write!(f, "{}", self.cfg_gate_ln_for(required.clone(), config))
+            }
+        })
+    }
+
     fn cfg_gate_ln_inner<'a>(
         &'a self,
         required_items: impl IntoIterator<Item = ItemTree> + 'a,
@@ -2692,11 +2723,7 @@ impl Stmt {
 
                     if let Some(bridged_to) = bridged_to {
                         writeln!(f)?;
-                        write!(
-                            f,
-                            "{}",
-                            self.cfg_gate_ln_for([ItemTree::from_id(bridged_to.clone())], config)
-                        )?;
+                        write!(f, "{}", self.cfg_gate_ln_bridged(bridged_to, config))?;
                         writeln!(
                             f,
                             "impl{} AsRef<{}{}> for {}{} {{",
@@ -2724,11 +2751,7 @@ impl Stmt {
                         writeln!(f, "}}")?;
 
                         writeln!(f)?;
-                        write!(
-                            f,
-                            "{}",
-                            self.cfg_gate_ln_for([ItemTree::from_id(bridged_to.clone())], config)
-                        )?;
+                        write!(f, "{}", self.cfg_gate_ln_bridged(bridged_to, config))?;
                         writeln!(
                             f,
                             "impl{} AsRef<{}{}> for {}{} {{",
@@ -4198,6 +4221,14 @@ fn simple_platform_gate(
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn toll_free_bridging_platforms() {
+        let apple_only = |id: &str| bridging_is_apple_only(&id.parse().unwrap());
+        assert!(!apple_only("CoreFoundation.CFString.CFString"));
+        assert!(apple_only("CoreText.CTFont.CTFont"));
+    }
+
     use super::*;
 
     #[test]

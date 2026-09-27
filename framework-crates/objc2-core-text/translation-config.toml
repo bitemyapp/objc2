@@ -8,6 +8,7 @@ ios = "3.2"
 tvos = "9.0"
 watchos = "2.0"
 visionos = "1.0"
+gnustep = true
 
 # Defined in objc2-application-services and redefined here, though it's a
 # type-alias, so we'd rather just want it only in `objc2-application-services`

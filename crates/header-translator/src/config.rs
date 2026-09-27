@@ -82,7 +82,13 @@ impl Config {
             lib.validate();
         }
 
-        let builtin_files = ["bitflags.toml", "builtin.toml", "core.toml", "libc.toml"];
+        let builtin_files = [
+            "bitflags.toml",
+            "builtin.toml",
+            "core.toml",
+            "libc.toml",
+            "libc-darwin.toml",
+        ];
 
         for builtin_file in builtin_files {
             let path = configs_dir.join(builtin_file);
@@ -127,7 +133,15 @@ impl Config {
         })
     }
 
+    /// Look up the library config of a crate.
+    ///
+    /// `libc` is described by two pseudo-libraries, `__libc__` and its
+    /// Apple-only part `__libc_darwin__`. A dependency on the crate is one on
+    /// `__libc__`, which is available everywhere.
     pub fn try_library_from_crate(&self, krate: &str) -> Option<&LibraryConfig> {
+        if krate == "libc" {
+            return self.try_library("__libc__");
+        }
         self.libraries.values().find(|lib| lib.krate == krate)
     }
 
