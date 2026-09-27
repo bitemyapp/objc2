@@ -454,6 +454,7 @@ impl LibraryConfig {
             assert_eq!(data.no_implementor, Default::default());
             assert_eq!(data.implementor, Default::default());
             assert_eq!(data.returns_retained, Default::default());
+            assert_eq!(data.return_, Default::default());
         }
     }
 
@@ -578,6 +579,9 @@ pub struct StmtData {
     #[serde(rename = "returns-retained")]
     #[serde(default)]
     pub returns_retained: Option<bool>,
+    #[serde(rename = "return")]
+    #[serde(default)]
+    pub return_: TypeOverride,
 }
 
 impl StmtData {
@@ -780,12 +784,36 @@ mod tests {
             required-crates = []
             fn.TestCreateThing.returns-retained = false
             fn.TestGetThing.returns-retained = true
+            fn.TestCopyThing.return.nullability = "nullable"
             "#,
         )
         .unwrap();
         config.validate();
         assert_eq!(config.fns["TestCreateThing"].returns_retained, Some(false));
         assert_eq!(config.fns["TestGetThing"].returns_retained, Some(true));
+        assert_eq!(
+            config.fns["TestCopyThing"].return_.nullability,
+            Some(Nullability::Nullable)
+        );
+    }
+
+    #[test]
+    fn return_override_only_on_functions() {
+        let config: LibraryConfig = basic_toml::from_str(
+            r#"
+            framework = "Test"
+            crate = "objc2-test"
+            required-crates = []
+            static.TestThing.return.nullability = "nullable"
+            "#,
+        )
+        .unwrap();
+        assert_eq!(
+            config.statics["TestThing"].return_.nullability,
+            Some(Nullability::Nullable)
+        );
+        let validated = std::panic::catch_unwind(|| config.validate());
+        assert!(validated.is_err(), "`return` accepted on a static");
     }
 
     #[test]

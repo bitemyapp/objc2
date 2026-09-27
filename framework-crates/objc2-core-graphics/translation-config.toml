@@ -71,3 +71,6 @@ fn.CGColorSpaceGetName.renamed = "get_name"
 
 # Conflicts with `CGColorSpaceGetBaseColorSpace`.
 fn.CGColorSpaceCopyBaseColorSpace.renamed = "copy_base_color_space"
+# Returns NULL for a space without a base space (all but indexed ones and
+# pattern ones made with one), though it is declared as returning non-null.
+fn.CGColorSpaceCopyBaseColorSpace.return.nullability = "nullable"

@@ -24,7 +24,7 @@ use crate::id::ItemIdentifier;
 use crate::id::ItemTree;
 use crate::id::Location;
 use crate::immediate_children;
-use crate::method::{handle_reserved, Method};
+use crate::method::{apply_type_override, handle_reserved, Method};
 use crate::name_translation::{enum_prefix, split_words};
 use crate::protocol::parse_direct_protocols;
 use crate::protocol::ProtocolRef;
@@ -1577,7 +1577,8 @@ impl Stmt {
                 }
 
                 let result_type = entity.get_result_type().expect("function result type");
-                let result_type = Ty::parse_function_return(result_type, context);
+                let mut result_type = Ty::parse_function_return(result_type, context);
+                apply_type_override(&mut result_type, &data.return_);
                 let mut arguments = Vec::new();
                 let mut must_use = false;
                 // Assume by default that functions can unwind.

@@ -50,6 +50,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * `NSCreateFilenamePboardType` and `NSCreateFileContentsPboardType` no longer
   take ownership of the string they return, which is autoreleased; they
   released it one time too many.
+* **BREAKING**: `CGColorSpace::copy_base_color_space` (and the deprecated
+  `CGColorSpaceCopyBaseColorSpace`) now return an `Option`: the function
+  returns NULL for color spaces without a base space (all but indexed
+  ones and pattern ones made with one), which panicked before.
 
 ## [0.3.1] - 2025-04-19
 [0.3.1]: https://github.com/madsmtm/objc2/compare/frameworks-0.3.0...frameworks-0.3.1
