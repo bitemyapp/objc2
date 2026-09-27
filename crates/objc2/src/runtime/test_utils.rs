@@ -42,6 +42,32 @@ unsafe impl Encode for CustomStruct {
     );
 }
 
+/// A struct with signed fields and no name, the way Swift encodes C structs
+/// such as `NSRange` (`{?=qq}` on 64-bit).
+#[derive(Debug, Eq, PartialEq)]
+#[repr(C)]
+pub(crate) struct AnonymousSignedRange {
+    pub(crate) location: isize,
+    pub(crate) length: isize,
+}
+
+unsafe impl Encode for AnonymousSignedRange {
+    const ENCODING: Encoding = Encoding::Struct("?", &[isize::ENCODING, isize::ENCODING]);
+}
+
+/// The same layout as [`AnonymousSignedRange`], but named and unsigned, the
+/// way Objective-C encodes `NSRange` (`{_NSRange=QQ}` on 64-bit).
+#[derive(Debug, Eq, PartialEq)]
+#[repr(C)]
+pub(crate) struct NamedUnsignedRange {
+    pub(crate) location: usize,
+    pub(crate) length: usize,
+}
+
+unsafe impl Encode for NamedUnsignedRange {
+    const ENCODING: Encoding = Encoding::Struct("_NSRange", &[usize::ENCODING, usize::ENCODING]);
+}
+
 // TODO: Remove once c"" strings are in MSRV
 fn c(s: &str) -> CString {
     CString::new(s).unwrap()
@@ -101,6 +127,17 @@ pub(crate) fn custom_class() -> &'static AnyClass {
 
         extern "C-unwind" fn get_nsinteger(_this: &AnyObject, _cmd: Sel) -> ffi::NSInteger {
             5
+        }
+
+        extern "C-unwind" fn get_anonymous_range(
+            _this: &AnyObject,
+            _cmd: Sel,
+            range: AnonymousSignedRange,
+        ) -> AnonymousSignedRange {
+            AnonymousSignedRange {
+                location: range.location + 1,
+                length: range.length + 1,
+            }
         }
 
         extern "C-unwind" fn custom_obj_set_bar(this: &AnyObject, _cmd: Sel, bar: u32) {
@@ -187,6 +224,8 @@ pub(crate) fn custom_class() -> &'static AnyClass {
 
             let get_nsinteger: extern "C-unwind" fn(_, _) -> _ = get_nsinteger;
             builder.add_method(sel!(getNSInteger), get_nsinteger);
+            let get_anonymous_range: extern "C-unwind" fn(_, _, _) -> _ = get_anonymous_range;
+            builder.add_method(sel!(nextAnonymousRange:), get_anonymous_range);
 
             let protocol_instance_method: extern "C-unwind" fn(_, _, _) = custom_obj_set_bar;
             builder.add_method(sel!(setBar:), protocol_instance_method);
