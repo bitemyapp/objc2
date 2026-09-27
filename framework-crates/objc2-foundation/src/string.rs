@@ -15,6 +15,45 @@ use objc2::{AnyThread, Message};
 use crate::util;
 use crate::{NSMutableString, NSString};
 
+/// The type of string encodings, such as [`NSUTF8StringEncoding`].
+///
+/// This is [`NSUInteger`] on Apple platforms, and [`c_int`] on GNUStep, where
+/// it is declared as a C enum without a fixed type (which Clang encodes as
+/// `i`).
+///
+/// [`NSUTF8StringEncoding`]: crate::NSUTF8StringEncoding
+/// [`NSUInteger`]: crate::NSUInteger
+/// [`c_int`]: core::ffi::c_int
+//
+// NOTE: GNUStep declares many other enums without a fixed type, which we
+// still bind with Apple's type there. This is the first to get its own.
+#[cfg(not(feature = "gnustep-1-7"))]
+pub type NSStringEncoding = crate::NSUInteger;
+/// The type of string encodings, such as [`NSUTF8StringEncoding`].
+///
+/// This is [`NSUInteger`] on Apple platforms, and [`c_int`] on GNUStep, where
+/// it is declared as a C enum without a fixed type (which Clang encodes as
+/// `i`).
+///
+/// [`NSUTF8StringEncoding`]: crate::NSUTF8StringEncoding
+/// [`NSUInteger`]: crate::NSUInteger
+/// [`c_int`]: core::ffi::c_int
+#[cfg(feature = "gnustep-1-7")]
+pub type NSStringEncoding = core::ffi::c_int;
+
+// These don't fit in a `c_int`. GNUStep uses the same values, as unsigned
+// 32-bit enum constants, so we reinterpret the bits there.
+#[allow(non_upper_case_globals, missing_docs)]
+pub const NSUTF16BigEndianStringEncoding: NSStringEncoding = 0x90000100u32 as NSStringEncoding;
+#[allow(non_upper_case_globals, missing_docs)]
+pub const NSUTF16LittleEndianStringEncoding: NSStringEncoding = 0x94000100u32 as NSStringEncoding;
+#[allow(non_upper_case_globals, missing_docs)]
+pub const NSUTF32StringEncoding: NSStringEncoding = 0x8c000100u32 as NSStringEncoding;
+#[allow(non_upper_case_globals, missing_docs)]
+pub const NSUTF32BigEndianStringEncoding: NSStringEncoding = 0x98000100u32 as NSStringEncoding;
+#[allow(non_upper_case_globals, missing_docs)]
+pub const NSUTF32LittleEndianStringEncoding: NSStringEncoding = 0x9c000100u32 as NSStringEncoding;
+
 // Even if an exception occurs inside a string method, the state of the string
 // (should) still be perfectly safe to access.
 impl UnwindSafe for NSString {}
@@ -128,8 +167,7 @@ impl NSMutableString {
 
 unsafe fn init_with_str<T: Message>(obj: Allocated<T>, string: &str) -> Retained<T> {
     let bytes: *const c_void = string.as_ptr().cast();
-    // We use `msg_send!` instead of the generated method, since that
-    // assumes the encoding is `usize`, whereas GNUStep assumes `i32`.
+    // `UTF8_ENCODING` has the same type as `NSStringEncoding`.
     unsafe {
         msg_send![
             obj,

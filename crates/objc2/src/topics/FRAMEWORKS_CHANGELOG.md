@@ -77,6 +77,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `SCBondInterface` and `SCVLANInterface`.
 * **BREAKING**: Renamed `THClient::enableCredentialSharingMode` to `enableCredentialSharingModeWithExtendedPANId_completion`.
 * **BREAKING**: Split parts of `FSVolumeOperations` into `FSVolumeCommonOperations`.
+* **BREAKING** (GNUStep only): `NSStringEncoding` is now a `c_int` when the
+  `gnustep-1-7` feature is enabled, since GNUStep declares it as a C enum
+  without a fixed type. Methods that take or return an encoding now have the
+  right signature there, and `availableStringEncodings` the right stride.
 
 ### Removed
 * **BREAKING**: Removed a lot of deprecated function aliases. Use the methods instead.
