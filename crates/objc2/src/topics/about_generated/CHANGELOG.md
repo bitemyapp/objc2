@@ -38,6 +38,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `gnustep-1-7` feature is enabled, since GNUStep declares it as a C enum
   without a fixed type. Methods that take or return an encoding now have the
   right signature there, and `availableStringEncodings` the right stride.
+* `NSTextAlignment::Center` and `NSTextAlignment::Right` now take GNUStep's
+  values (1 and 2, as in libs-gui) explicitly when the `gnustep-1-7` feature
+  is enabled, instead of through `TARGET_ABI_USES_IOS_VALUES`.
 
 ### Fixed
 * **BREAKING**: Fix structs with packed alignment by marking them `#[repr(packed(...))]`.
