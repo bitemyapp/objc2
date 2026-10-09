@@ -14,3 +14,4 @@ visionos = "1.0"
 
 # SAFETY: UniformTypeIdentifiers is well-behaved.
 unsafe-default-safety.documentation-is-reviewed = true
+gnustep = true
