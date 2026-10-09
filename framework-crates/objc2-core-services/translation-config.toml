@@ -8,6 +8,7 @@ ios = "12.0"
 tvos = "12.0"
 watchos = "5.0"
 visionos = "1.0"
+gnustep = true
 
 # CarbonCore is deprecated, and very C-centric, which header-translator has
 # trouble with. Recursive structs are especially problematic currently.
